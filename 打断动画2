@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>时光OS V1.1</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --text-color: #ffffff;
+            --status-bar-bg: rgba(30,30,30,0.95);
+            --card-bg: rgba(255,255,255,0.05);
+            --icon-bg: rgba(255,255,255,0.1);
+            --accent-color: #00ff00;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --text-color: #333333;
+            --status-bar-bg: rgba(255,255,255,0.95);
+            --card-bg: rgba(0,0,0,0.05);
+            --icon-bg: rgba(0,0,0,0.1);
+            --accent-color: #009900;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            height: 100vh;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto', sans-serif;
+            touch-action: pan-y;
+            transition: all 0.3s;
+        }
+        .status-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 52px;
+            padding: 0 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--status-bar-bg);
+            backdrop-filter: blur(40px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .status-left, .status-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .time {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .app-grid {
+            position: fixed;
+            top: 80px;
+            left: 24px;
+            right: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 24px;
+            padding: 16px;
+            z-index: 900;
+        }
+
+        .app-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-icon {
+            width: 64px;
+            height: 64px;
+            background: var(--icon-bg);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        .app-icon:active {
+            transform: scale(0.92);
+            filter: brightness(1.2);
+        }
+
+        .app-label {
+            font-size: 12px;
+            text-align: center;
+            opacity: 0.9;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(20,20,20,0.98);
+            backdrop-filter: blur(40px);
+            z-index: 1001;
+            opacity: 0;
+            transform: scale(0.8);
+            transform-origin: var(--origin-x) var(--origin-y);
+            transition: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .app-content {
+            position: relative;
+            padding: 80px 32px 32px;
+            color: var(--text-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .system-specs {
+            margin-top: 40px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 16px;
+        }
+
+        .spec-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .bilibili-container {
+            width: 100%;
+            height: calc(100vh - 140px);
+            margin-top: 20px;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .bilibili-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .settings-container {
+            margin-top: 40px;
+        }
+
+        .setting-item {
+            padding: 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .setting-item:active {
+            transform: translateX(5px);
+        }
+        .control-center {
+            position: fixed;
+            top: -100%;
+            left: 0;
+            right: 0;
+            height: 320px;
+            background: var(--status-bar-bg);
+            backdrop-filter: blur(40px);
+            z-index: 999;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            padding: 24px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .control-center.active {
+            transform: translateY(100%);
+        }
+
+        .performance-switch {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #555;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .performance-switch.active {
+            background: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0,255,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="status-bar" id="statusBar">
+        <div class="status-left">
+            <div class="time" id="timeDisplay">00:00</div>
+        </div>
+        <div class="status-right">
+            <div class="network-status">Wi-Fi</div>
+            <div class="battery">
+                <span id="batteryLevel">98%</span>
+                <div class="battery-icon"></div>
+            </div>
+        </div>
+    </div>
+    <div class="app-grid">
+        <div class="app-item" onclick="openApp(event, 'main')">
+            <div class="app-icon">📱</div>
+            <div class="app-label">系统信息</div>
+        </div>
+        <div class="app-item" onclick="openApp(event, 'settings')">
+            <div class="app-icon">⚙️</div>
+            <div class="app-label">设置</div>
+        </div>
+        <div class="app-item" onclick="openApp(event, 'bilibili')">
+            <div class="app-icon">📺</div>
+            <div class="app-label">哔哩哔哩</div>
+        </div>
+    </div>
+    <div class="overlay" id="overlay">
+        <div class="app-content">
+            <div class="back-btn" onclick="closeApp()">← 返回</div>
+            <div id="mainContent" class="content-page">
+                <div class="system-specs">
+                    <h2>配置参数</h2>
+                    <div class="spec-item">
+                        <span>设备型号：</span>
+                        <span id="deviceModel">小时光nzm pro</span>
+                    </div>
+                    <div class="spec-item">
+                        <span>处理器：</span>
+                        <span id="cpuInfo">骁龙8SGen3</span>
+                    </div>
+                    <div class="spec-item">
+                        <span>运存：</span>
+                        <span id="ramInfo">12GB LPDDR5X</span>
+                    </div>
+                    <div class="spec-item">
+                        <span>存储：</span>
+                        <span id="storageInfo">256GB</span>
+                    </div>
+                </div>
+            </div>
+            <div id="settingsContent" class="content-page" style="display:none;">
+                <div class="settings-container">
+                    <div class="setting-item" onclick="toggleTheme()">
+                        <span>主题模式</span>
+                        <span id="themeStatus">夜间模式</span>
+                    </div>
+                    <div class="setting-item" onclick="changeLanguage()">
+                        <span>语言设置</span>
+                        <span id="languageStatus">中文</span>
+                    </div>
+                    <div class="setting-item" onclick="togglePerformance()">
+                        <span>Monster+</span>
+                        <span id="performanceStatus">关闭</span>
+                    </div>
+                </div>
+            </div>
+            <div id="bilibiliContent" class="content-page" style="display:none;">
+                <div class="bilibili-container">
+                    <iframe class="bilibili-frame" 
+                            src="https://m.bilibili.com/"
+                            allowfullscreen
+                            sandbox="allow-scripts allow-same-origin">
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="control-center" id="controlCenter">
+        <div class="control-item" onclick="togglePerformance()">
+            <div class="performance-switch" id="performanceSwitch"></div>
+            <div class="control-label">性能模式</div>
+        </div>
+    </div>
+
+    <script>
+        let isAnimating = false;
+        let currentLang = 'zh';
+        let isPerformanceMode = false;
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('timeDisplay').textContent = 
+                now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'});
+        }
+        function updateBattery() {
+            navigator.getBattery?.().then(battery => {
+                const update = () => {
+                    document.getElementById('batteryLevel').textContent = 
+                        `${Math.floor(battery.level * 100)}%`;
+                };
+                battery.addEventListener('levelchange', update);
+                update();
+            });
+        }
+        function openApp(e, type) {
+            if(isAnimating) return;
+            isAnimating = true;
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const overlay = document.getElementById('overlay');
+            
+            overlay.style.setProperty('--origin-x', `${rect.left + rect.width/2}px`);
+            overlay.style.setProperty('--origin-y', `${rect.top + rect.height/2}px`);
+
+            document.querySelectorAll('.content-page').forEach(p => p.style.display = 'none');
+            document.getElementById(`${type}Content`).style.display = 'block';
+            
+            overlay.classList.add('active');
+            overlay.addEventListener('transitionend', () => isAnimating = false, {once: true});
+        }
+
+        function closeApp() {
+            if(isAnimating) return;
+            isAnimating = true;
+            
+            document.getElementById('overlay').classList.remove('active');
+            overlay.addEventListener('transitionend', () => isAnimating = false, {once: true});
+        }
+        function toggleTheme() {
+            const isLight = document.body.getAttribute('data-theme') === 'light';
+            document.body.setAttribute('data-theme', isLight ? '' : 'light');
+            document.getElementById('themeStatus').textContent = isLight ? '夜间模式' : '白天模式';
+            localStorage.setItem('theme', isLight ? '' : 'light');
+        }
+        function togglePerformance() {
+            isPerformanceMode = !isPerformanceMode;
+            document.getElementById('performanceSwitch').classList.toggle('active', isPerformanceMode);
+            document.getElementById('performanceStatus').textContent = isPerformanceMode ? '开启' : '关闭';
+            document.body.style.transform = isPerformanceMode ? 'translateZ(0)' : '';
+            document.body.style.willChange = isPerformanceMode ? 'transform' : 'auto';
+        }
+        let startY = 0;
+        document.querySelector('.status-bar').addEventListener('touchstart', e => {
+            startY = e.touches[0].clientY;
+        });
+
+        document.querySelector('.status-bar').addEventListener('touchmove', e => {
+            if (e.touches[0].clientY - startY > 50) {
+                document.getElementById('controlCenter').classList.add('active');
+            }
+        });
+
+        document.querySelector('.status-bar').addEventListener('click', () => {
+            document.getElementById('controlCenter').classList.remove('active');
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTime();
+            setInterval(updateTime, 1000);
+            updateBattery();
+            if(localStorage.getItem('theme') === 'light') toggleTheme();
+        });
+    </script>
+</body>
+</html>
+//小时光nzm开发
