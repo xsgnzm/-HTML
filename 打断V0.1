@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>V0.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #000;
+            touch-action: none; 
+        }
+
+        .app-icon {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: #2196F3;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            transition: transform 0.2s;
+            z-index: 2;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            display: none;
+            transform-origin: 20px 20px;
+            z-index: 3; 
+            will-change: transform; 
+        }
+
+        .overlay-content {
+            padding: 20px;
+            color: white;
+        }
+
+        @keyframes scaleUp {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes scaleDown {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .scale-up {
+            animation: scaleUp 0.4s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+        }
+
+        .scale-down {
+            animation: scaleDown 0.3s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-icon" onclick="openOverlay()">App</div>
+    
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <h2>打开后的内容</h2>
+            <p>点击任意位置返回</p>
+        </div>
+    </div>
+
+    <script>
+        const icon = document.querySelector('.app-icon');
+        const overlay = document.getElementById('overlay');
+
+        function handleInteraction(e) {
+            if (overlay.style.display === 'block') {
+                closeOverlay();
+                e.preventDefault(); 
+            }
+        }
+
+        function openOverlay() {
+            overlay.style.display = 'block';
+            void overlay.offsetHeight; 
+            overlay.classList.add('scale-up');
+        }
+
+        function closeOverlay() {
+            overlay.classList.remove('scale-up');
+            overlay.classList.add('scale-down');
+            
+            overlay.addEventListener('animationend', () => {
+                overlay.style.display = 'none';
+                overlay.classList.remove('scale-down');
+            }, { once: true });
+        }
+        overlay.addEventListener('click', handleInteraction);
+        overlay.addEventListener('touchstart', handleInteraction); // 移动端立即响应
+        
+        overlay.querySelector('.overlay-content').addEventListener('click', e => {
+            e.stopPropagation();
+        });
+    </script>
+</body>
+</html>
+//小时光XAI
